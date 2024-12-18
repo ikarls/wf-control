@@ -23,19 +23,65 @@ OPTIONAL_FILE = file("$projectDir/data/OPTIONAL_FILE")
 
 process getVersions {
     label "wftemplate"
+    cpus 1
+    output:
+        path "common_versions.txt"
+    script:
+    """
+    python -c "import pysam; print(f'pysam,{pysam.__version__}')" >> common_versions.txt
+    fastcat --version | sed 's/^/fastcat,/' >> common_versions.txt
+    """
+}
+
+process addEmuToVersions {
+    label "emu"
+    publishDir "${params.out_dir}", mode: 'copy', pattern: "versions.txt"
     // Note that some wfs can modify this file to add other tools' version.
     // Add the publishDir directive in the latest one.
-    publishDir "${params.out_dir}", mode: 'copy', pattern: "versions.txt"
     cpus 1
+    input:
+        path "common_versions.txt"
     output:
         path "versions.txt"
     script:
     """
-    python -c "import pysam; print(f'pysam,{pysam.__version__}')" >> versions.txt
-    fastcat --version | sed 's/^/fastcat,/' >> versions.txt
+    emu --version | sed 's/^/emu,/' >> common_versions.txt
+    mv common_versions.txt versions.txt
     """
 }
 
+// process combineOutput {
+//     label "emu"
+//     cpus params.threads
+//     input:
+//         path emu_results //path to input file directory
+//     output:
+//         path "*.tsv" , emit: combine_output
+//     script:
+//         def split_tables = params.split_tables ? "--split-tables" : ""
+//         def counts = params.counts ? "--counts" : ""
+//     """
+//     emu combine-outputs . ${params.rank} ${counts} ${split_tables}
+//     """
+// }
+
+// process runVegan {
+//     label "vegan"
+//     cpus 1
+//     input:
+//         path combine_output //path to input file directory
+//     output:
+//         path "*.tsv" , emit: combine_output
+//     script:
+//         // unique_name = os.path.basename(unique_filename(os.path.join(pathToData, report_name)))
+//         // rmarkdown = "rmarkdown::render(\"../rscripts/internal_control_log.Rmd\", output_file=\"/usr/local/src/data/" +str(unique_name)+ "\")"
+
+//         def split_tables = params.split_tables ? "--split-tables" : ""
+//         def counts = params.counts ? "--counts" : ""
+//     """
+//     emu combine-outputs . ${params.rank} ${counts} ${split_tables}
+//     """
+// }
 
 process makeReport {
     label "wftemplate"
@@ -135,8 +181,10 @@ workflow pipeline {
         }
 
         client_fields = params.client_fields && file(params.client_fields).exists() ? file(params.client_fields) : OPTIONAL_FILE
-        software_versions = getVersions()
+        common_versions = getVersions()
+        software_versions = addEmuToVersions(common_versions)
         workflow_params = getParams()
+
 
         for_report = reads
         | map { meta, path, index, stats ->
