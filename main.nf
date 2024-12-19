@@ -25,11 +25,11 @@ process getVersions {
     label "wftemplate"
     cpus 1
     output:
-        path "common_versions.txt"
+        path "versions.txt"
     script:
     """
-    python -c "import pysam; print(f'pysam,{pysam.__version__}')" >> common_versions.txt
-    fastcat --version | sed 's/^/fastcat,/' >> common_versions.txt
+    python -c "import pysam; print(f'pysam,{pysam.__version__}')" >> versions.txt
+    fastcat --version | sed 's/^/fastcat,/' >> versions.txt
     """
 }
 
@@ -39,33 +39,53 @@ process addEmuToVersions {
     // Note that some wfs can modify this file to add other tools' version.
     // Add the publishDir directive in the latest one.
     cpus 1
-    input:
-        path "common_versions.txt"
+    input:  
+        path "versions.txt"
     output:
         path "versions.txt"
     script:
     """
-    emu --version | sed 's/^/emu,/' >> common_versions.txt
-    mv common_versions.txt versions.txt
+    emu --version | sed 's/^/emu,/' >> versions.txt
     """
 }
 
-// process combineOutput {
-//     label "emu"
-//     cpus params.threads
+// process addVeganToVersions {
+//     label "vegan"
+//     publishDir "${params.out_dir}", mode: 'copy', pattern: "versions.txt"
+//     // Note that some wfs can modify this file to add other tools' version.
+//     // Add the publishDir directive in the latest one.
+//     cpus 1
 //     input:
-//         path emu_results //path to input file directory
+//         path "versions.txt"
 //     output:
-//         path "*.tsv" , emit: combine_output
+//         path "versions.txt"
 //     script:
-//         def split_tables = params.split_tables ? "--split-tables" : ""
-//         def counts = params.counts ? "--counts" : ""
 //     """
-//     emu combine-outputs . ${params.rank} ${counts} ${split_tables}
+//     bash R --version | head -n 1 | sed 's/^/R,/' >> versions.txt
 //     """
 // }
+    //packageVersion("vegan")
+//  Command 'ps' required by nextflow to collect task metrics cannot be found - apt install procps?
 
-// process runVegan {
+process combineOutput {
+    label "emu"
+    cpus params.threads
+    publishDir "${params.out_dir}", mode: 'copy', pattern: "${file(params.emu_files).name}/emu-combined-*.tsv"
+    input:
+        path ch_emu
+    output:
+        path "${file(params.emu_files).name}/emu-combined-*.tsv" , emit: combine_output
+    script:
+        def split_tables = params.split_tables ? "--split-tables" : ""
+        def counts = params.counts ? "--counts" : ""
+        def emu_folder = file(params.emu_files).name
+    """
+    emu combine-outputs ${emu_folder} ${params.rank} ${counts} ${split_tables}
+    """
+}
+
+
+// process runVegan 
 //     label "vegan"
 //     cpus 1
 //     input:
@@ -183,8 +203,13 @@ workflow pipeline {
         client_fields = params.client_fields && file(params.client_fields).exists() ? file(params.client_fields) : OPTIONAL_FILE
         common_versions = getVersions()
         software_versions = addEmuToVersions(common_versions)
+        //emu_version = addEmuToVersions(common_versions)
+        //software_versions = addVeganToVersions(emu_version)
         workflow_params = getParams()
 
+        ch_emu = Channel.fromPath(params.emu_files)
+        //ch_emu.view()
+        combine_output = combineOutput(ch_emu)
 
         for_report = reads
         | map { meta, path, index, stats ->
