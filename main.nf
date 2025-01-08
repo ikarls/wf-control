@@ -35,9 +35,9 @@ process getVersions {
 
 process addEmuToVersions {
     label "emu"
-    publishDir "${params.out_dir}", mode: 'copy', pattern: "versions.txt"
-    // Note that some wfs can modify this file to add other tools' version.
-    // Add the publishDir directive in the latest one.
+    // publishDir "${params.out_dir}", mode: 'copy', pattern: "versions.txt"
+    // // Note that some wfs can modify this file to add other tools' version.
+    // // Add the publishDir directive in the latest one.
     cpus 1
     input:  
         path "versions.txt"
@@ -49,23 +49,22 @@ process addEmuToVersions {
     """
 }
 
-// process addVeganToVersions {
-//     label "vegan"
-//     publishDir "${params.out_dir}", mode: 'copy', pattern: "versions.txt"
-//     // Note that some wfs can modify this file to add other tools' version.
-//     // Add the publishDir directive in the latest one.
-//     cpus 1
-//     input:
-//         path "versions.txt"
-//     output:
-//         path "versions.txt"
-//     script:
-//     """
-//     bash R --version | head -n 1 | sed 's/^/R,/' >> versions.txt
-//     """
-// }
-    //packageVersion("vegan")
-//  Command 'ps' required by nextflow to collect task metrics cannot be found - apt install procps?
+process addVeganToVersions {
+    label "vegan"
+    publishDir "${params.out_dir}", mode: 'copy', pattern: "versions.txt"
+    // Note that some wfs can modify this file to add other tools' version.
+    // Add the publishDir directive in the latest one.
+    cpus 1
+    input:
+        path "versions.txt"
+    output:
+        path "versions.txt"
+    script:
+    """
+    Rscript -e "cat(paste0('R, ',getRversion(),'\n'))" >> versions.txt
+    Rscript -e "cat(paste0('vegan, ',packageVersion('vegan'),'\n'))" >> versions.txt
+    """
+}
 
 process combineOutput {
     label "emu"
@@ -84,14 +83,14 @@ process combineOutput {
     """
 }
 
-
-// process runVegan 
+// process runVegan {
 //     label "vegan"
+//     publishDir "${params.out_dir}", mode: 'copy', pattern: "*_IK_logg.html"
 //     cpus 1
 //     input:
-//         path combine_output //path to input file directory
+//         path combine_output
 //     output:
-//         path "*.tsv" , emit: combine_output
+//         path "*_IK_logg.html"
 //     script:
 //         // unique_name = os.path.basename(unique_filename(os.path.join(pathToData, report_name)))
 //         // rmarkdown = "rmarkdown::render(\"../rscripts/internal_control_log.Rmd\", output_file=\"/usr/local/src/data/" +str(unique_name)+ "\")"
@@ -99,7 +98,7 @@ process combineOutput {
 //         def split_tables = params.split_tables ? "--split-tables" : ""
 //         def counts = params.counts ? "--counts" : ""
 //     """
-//     emu combine-outputs . ${params.rank} ${counts} ${split_tables}
+//     Rscript -e "cat(paste0('R, ',getRversion(),'\n'))" >> versions.txt
 //     """
 // }
 
@@ -202,9 +201,9 @@ workflow pipeline {
 
         client_fields = params.client_fields && file(params.client_fields).exists() ? file(params.client_fields) : OPTIONAL_FILE
         common_versions = getVersions()
-        software_versions = addEmuToVersions(common_versions)
-        //emu_version = addEmuToVersions(common_versions)
-        //software_versions = addVeganToVersions(emu_version)
+        //software_versions = addEmuToVersions(common_versions)
+        emu_version = addEmuToVersions(common_versions)
+        software_versions = addVeganToVersions(emu_version)
         workflow_params = getParams()
 
         ch_emu = Channel.fromPath(params.emu_files)
