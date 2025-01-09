@@ -83,24 +83,21 @@ process combineOutput {
     """
 }
 
-// process runVegan {
-//     label "vegan"
-//     publishDir "${params.out_dir}", mode: 'copy', pattern: "*_IK_logg.html"
-//     cpus 1
-//     input:
-//         path combine_output
-//     output:
-//         path "*_IK_logg.html"
-//     script:
-//         // unique_name = os.path.basename(unique_filename(os.path.join(pathToData, report_name)))
-//         // rmarkdown = "rmarkdown::render(\"../rscripts/internal_control_log.Rmd\", output_file=\"/usr/local/src/data/" +str(unique_name)+ "\")"
-
-//         def split_tables = params.split_tables ? "--split-tables" : ""
-//         def counts = params.counts ? "--counts" : ""
-//     """
-//     Rscript -e "cat(paste0('R, ',getRversion(),'\n'))" >> versions.txt
-//     """
-// }
+process runVegan {
+    label "vegan"
+    publishDir "${params.out_dir}", mode: 'copy', pattern: "${file(params.emu_files).name}/*IK_logg.html"
+    cpus 1
+    input:
+        path ch_emu
+    output:
+        path "${file(params.emu_files).name}/*IK_logg.html"
+    script:
+    def emu_table = "${file(params.emu_files)}/emu-combined-species-counts.tsv"
+    def log_html = "${file(params.emu_files)}/16S_IK_logg.html"
+    """
+    Rscript -e "rmarkdown::render('/usr/local/src/rscripts/internal_control_log.Rmd', params=list(args='${emu_table}'), output_file='${log_html}')"
+    """
+}
 
 process makeReport {
     label "wftemplate"
@@ -206,9 +203,15 @@ workflow pipeline {
         software_versions = addVeganToVersions(emu_version)
         workflow_params = getParams()
 
+        // Internal control log generation starts here
         ch_emu = Channel.fromPath(params.emu_files)
-        //ch_emu.view()
+        ch_emu.view()
+
         combine_output = combineOutput(ch_emu)
+        combine_output.view()
+
+        vegan_report = runVegan(ch_emu)
+        vegan_report.view()
 
         for_report = reads
         | map { meta, path, index, stats ->
