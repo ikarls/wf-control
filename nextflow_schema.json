@@ -15,6 +15,13 @@
             "fa_icon": "fas fa-arrow-right",
             "description": "Parameters for finding and handling input data for analysis.",
             "properties": {
+                "emu_files": {
+                    "type": "string",
+                    "format": "path",
+                    "title": "Emu files",
+                    "description": "Files to include in the internal control log report.",
+                    "help_text": "This accepts: the path to a folder containing emu _rel-abundance.tsv output files."
+                },
                 "fastq": {
                     "type": "string",
                     "format": "path",

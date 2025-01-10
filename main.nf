@@ -66,6 +66,7 @@ process addVeganToVersions {
     """
 }
 
+// Should handle output in work dirs instead of user input folder!
 process combineOutput {
     label "emu"
     cpus params.threads
@@ -83,6 +84,7 @@ process combineOutput {
     """
 }
 
+// Should handle output in work dirs instead of user input folder!
 process runVegan {
     label "vegan"
     publishDir "${params.out_dir}", mode: 'copy', pattern: "${file(params.emu_files).name}/*IK_logg.html"
