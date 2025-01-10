@@ -22,6 +22,23 @@
                     "description": "Files to include in the internal control log report.",
                     "help_text": "This accepts: the path to a folder containing emu _rel-abundance.tsv output files."
                 },
+                "rank": {
+                    "type": "string",
+                    "title": "Taxonomic rank",
+                    "description": "Combined table will only include all ranks above the specified rank according to this list: [tax_id, species, genus, family, order, class, phylum, superkingdom]",
+                },
+                "split_tables": {
+                    "type": "boolean",
+                    "default": false,
+                    "title": "Emu files",
+                    "description": "Output 2 tables: (1) abundances only at specified rank and (2) taxonomic lineages down to specified rank",
+                },
+                "counts": {
+                    "type": "boolean",
+                    "default": true,
+                    "title": "Counts",
+                    "description": "Generate table with counts instead of proportions",
+                },
                 "fastq": {
                     "type": "string",
                     "format": "path",
