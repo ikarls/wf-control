@@ -20,11 +20,11 @@ def main(args):
         if grouped
         else "Creating report for all samples."
     )
-    report_title = "Workflow Template Sequencing report"
+    report_title = "wf-control report"
     if grouped:
         report_title += f" for analysis group '{args.analysis_group}'"
     report = labs.LabsReport(
-        report_title, "wf-template",
+        report_title, "wf-control",
         args.params, args.versions, args.wf_version)
 
     with open(args.metadata, "r") as f:

@@ -85,6 +85,7 @@ process combineOutput {
 }
 
 // Should handle output in work dirs instead of user input folder!
+// Rscript is included in Docker to be able to use the same image as for: https://github.com/clinical-genomics-uppsala/Geneious_metabarcoding/
 process runVegan {
     label "vegan"
     publishDir "${params.out_dir}", mode: 'copy', pattern: "${file(params.emu_files).name}/*IK_logg.html"
@@ -103,7 +104,7 @@ process runVegan {
 
 process makeReport {
     label "wftemplate"
-    publishDir "${params.out_dir}", mode: 'copy', pattern: "wf-template*-report.html"
+    publishDir "${params.out_dir}", mode: 'copy', pattern: "wf-control*-report.html"
     input:
         // `analysis_group` can be `null`
         tuple val(analysis_group), val(metadata), path(stats, stageAs: "stats_*")
@@ -112,10 +113,10 @@ process makeReport {
         path "params.json"
         val wf_version
     output:
-        path "wf-template-*.html"
+        path "wf-control-*.html"
     script:
         String report_name = analysis_group ? \
-            "wf-template-$analysis_group-report.html" : "wf-template-report.html"
+            "wf-control-$analysis_group-report.html" : "wf-control-report.html"
         String metadata = new JsonBuilder(metadata).toPrettyString()
         String group_arg = analysis_group ? "--analysis_group $analysis_group" : ""
         String stats_args = stats ? "--stats $stats" : ""
