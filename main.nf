@@ -97,7 +97,7 @@ process runVegan {
     def emu_table = "${file(params.emu_files)}/emu-combined-species-counts.tsv"
     def log_html = "${file(params.emu_files)}/16S_IK_logg.html"
     """
-    Rscript -e "rmarkdown::render('/usr/local/src/rscripts/internal_control_log.Rmd', params=list(args='${emu_table}'), output_file='${log_html}')"
+    Rscript -e "rmarkdown::render('/usr/local/src/rscripts/internal_control_log.Rmd', params=list(emu='${emu_table}'), output_file='${log_html}')"
     """
 }
 
