@@ -69,7 +69,7 @@ process addVeganToVersions {
 // Should handle output in work dirs instead of user input folder!
 process combineOutput {
     label "emu"
-    cpus params.threads
+    cpus 1
     publishDir "${params.out_dir}", mode: 'copy', pattern: "${file(params.emu_files).name}/emu-combined-*.tsv"
     input:
         path ch_emu
